@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String       @id @default(uuid())
+  user_id            String?      @db.Uuid
+  first_name         String
+  last_name          String?
+  document           String       @unique
+  document_secondary String?      @unique
+  rg                 String?      @unique
+  email              String       @unique
+  password           String
+  phone              String?
+  gender             String?
+  birthday           DateTime?    @db.Date
+  avatar             String?
+  is_intelligence    Boolean?     @default(false)
+  status             Boolean?     @default(true)
+  created_at         DateTime     @default(now())
+  updated_at         DateTime?    @default(now())
+  Token              Token[]
+  RoleUser           RoleUser[]
+  Management         Management[]
+  Allocation         Allocation[]
+
+  @@map("users")
+}
+
+model Token {
+  id         Int       @id @default(autoincrement())
+  token      String    @unique
+  type       String
+  is_revoked Boolean?  @default(false)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  @@map("tokens")
+}
+
+model Permission {
+  id             Int              @id @default(autoincrement())
+  slug           String           @unique
+  name           String           @unique
+  description    String?
+  created_at     DateTime?        @default(now())
+  updated_at     DateTime?        @default(now())
+  PermissionRole PermissionRole[]
+
+  @@map("permissions")
+}
+
+model Role {
+  id             Int              @id @default(autoincrement())
+  slug           String           @unique
+  name           String           @unique
+  description    String?
+  created_at     DateTime?        @default(now())
+  updated_at     DateTime?        @default(now())
+  PermissionRole PermissionRole[]
+  RoleUser       RoleUser[]
+
+  @@map("roles")
+}
+
+model PermissionRole {
+  id         Int       @id @default(autoincrement())
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  permissions   Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  permission_id Int
+
+  roles   Role @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role_id Int
+
+  @@map("permission_role")
+}
+
+model RoleUser {
+  id         Int       @id @default(autoincrement())
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  role    Role @relation(fields: [role_id], references: [id])
+  role_id Int
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  @@map("role_user")
+}
+
+model Address {
+  id           Int          @id @default(autoincrement())
+  name         String?
+  zip          String?
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  country      String?
+  reference    String?
+  latitude     Decimal?     @db.Decimal(9, 6)
+  longitude    Decimal?     @db.Decimal(9, 6)
+  created_at   DateTime?    @default(now())
+  updated_at   DateTime?    @default(now())
+  Management   Management[]
+
+  @@map("addresses")
+}
+
+model Management {
+  id         Int       @id @default(autoincrement())
+  level      String?
+  name       String    @unique
+  initials   String    @unique
+  phone      String?
+  is_core    Boolean?  @default(false)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  address    Address @relation(fields: [address_id], references: [id])
+  address_id Int
+
+  ascendant_id         Int?        @unique
+  AscendantSuccessor   Management? @relation("AscendantId", fields: [ascendant_id], references: [id])
+  AscendantPredecessor Management? @relation("AscendantId")
+
+  core_id         Int?        @unique
+  CoreSuccessor   Management? @relation("CoreId", fields: [core_id], references: [id])
+  CorePredecessor Management? @relation("CoreId")
+
+  Allocation Allocation[]
+
+  @@map("managements")
+}
+
+model Allocation {
+  id         Int       @id @default(autoincrement())
+  started_at DateTime
+  ended_at   DateTime?
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  management    Management @relation(fields: [management_id], references: [id])
+  management_id Int
+
+  user    User?   @relation(fields: [user_id], references: [id])
+  user_id String?
+
+  @@map("allocations")
+}
+
+model Setting {
+  id                   Int       @id @default(autoincrement())
+  version              String?
+  profile_update_limit DateTime? @default(now())
+  managementsIds       String?
+  cortex_status        Boolean?  @default(true)
+  cortex_token         String?
+  cortex_status_person Boolean?  @default(true)
+  cortex_token_person  String?
+  cetic_status         Boolean?  @default(true)
+  cetic_token          String?
+  sinalid_status       Boolean?  @default(true)
+  sinalid_token        String?
+  sinalid_cookie       String?
+  created_at           DateTime? @default(now())
+  updated_at           DateTime? @default(now())
+
+  @@map("settings")
+}
